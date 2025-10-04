@@ -17,6 +17,11 @@
         .status-draft { color: red; font-weight: bold; }
         .status-submitted { color: green; font-weight: bold; }
         .table th, .table td { vertical-align: middle; }
+        .receipt-link {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -60,14 +65,14 @@
                 <tr>
                     <td>John</td>
                     <td>Taxi fare</td>
-                    <td id="todayDate">4th Oct, 2025</td>
+                    <td>4th Oct, 2025</td>
                     <td>Transport</td>
                     <td>John</td>
                     <td>None</td>
                     <td>1500 rs</td>
                     <td class="status-submitted">Submitted</td>
                 </tr>
-                </tbody>
+            </tbody>
         </table>
     </div>
 </div>
@@ -114,13 +119,18 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="expenseAmount" class="form-label">Amount (rs)</label>
+                        <input type="number" class="form-control" id="expenseAmount" min="0.01" step="0.01" required>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="expenseRemarks" class="form-label">Remarks</label>
                         <textarea class="form-control" id="expenseRemarks" rows="2"></textarea>
                     </div>
 
                     <div class="mb-3">
-                        <label for="expenseAmount" class="form-label">Amount (rs)</label>
-                        <input type="number" class="form-control" id="expenseAmount" min="0.01" step="0.01" required>
+                        <label for="receiptFile" class="form-label">Receipt (Photo/PDF)</label>
+                        <input type="file" class="form-control" id="receiptFile" accept="image/*,.pdf">
                     </div>
 
                 </div>
@@ -132,6 +142,24 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imagePreviewModalLabel">Receipt Image Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="receiptImage" src="" alt="Receipt Image" class="img-fluid" style="max-height: 80vh;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -140,7 +168,14 @@
         const expensesTableBody = document.getElementById('expensesTableBody');
         const toSubmitAmountSpan = document.getElementById('toSubmitAmount');
         const newExpenseForm = document.getElementById('newExpenseForm');
+        const receiptImageElement = document.getElementById('receiptImage');
+        const imagePreviewModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
         
+        // A simple array to "store" file objects associated with table rows
+        // In a real app, this would be IDs referencing server-stored files
+        const attachedReceipts = []; 
+        let nextReceiptId = 0;
+
         // Function to safely update the 'To Submit' summary total
         function updateSummaryTotal(amountToAdd) {
             let currentAmount = parseInt(toSubmitAmountSpan.dataset.amount || 0);
@@ -160,6 +195,32 @@
             return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
         }
 
+        // --- Event Listener for Receipt Links in the Table ---
+        expensesTableBody.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('receipt-link')) {
+                const receiptId = e.target.dataset.receiptId;
+                const file = attachedReceipts[receiptId];
+
+                if (file) {
+                    const fileURL = URL.createObjectURL(file);
+
+                    if (file.type.startsWith('image/')) {
+                        // Open image in modal
+                        receiptImageElement.src = fileURL;
+                        imagePreviewModal.show();
+                    } else {
+                        // For other file types (e.g., PDF), simulate download/open
+                        window.open(fileURL, '_blank');
+                        // Revoke the object URL when done to free up memory
+                        // (setTimeout is a simple way, but careful management needed in complex apps)
+                        setTimeout(() => URL.revokeObjectURL(fileURL), 5000); 
+                    }
+                } else {
+                    alert('Receipt not found.');
+                }
+            }
+        });
+
         // --- Form Submission Handler ---
         newExpenseForm.addEventListener('submit', function(e) {
             e.preventDefault(); // Stop the form from submitting normally
@@ -170,10 +231,22 @@
             const dateInput = document.getElementById('expenseDate').value;
             const category = document.getElementById('expenseCategory').value;
             const paidBy = document.getElementById('paidBy').value;
-            const remarks = document.getElementById('expenseRemarks').value || 'None';
             const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const remarks = document.getElementById('expenseRemarks').value || 'None';
+            
+            // Get file info
+            const receiptInput = document.getElementById('receiptFile');
+            const file = receiptInput.files.length > 0 ? receiptInput.files[0] : null;
+            let receiptDisplay = 'None';
 
-            // Basic validation (though HTML required fields handle most)
+            if (file) {
+                // Store the file and create a unique ID
+                const currentReceiptId = nextReceiptId++;
+                attachedReceipts[currentReceiptId] = file;
+                receiptDisplay = `<span class="receipt-link" data-receipt-id="${currentReceiptId}">Attached (${file.name})</span>`;
+            }
+
+            // Basic validation
             if (isNaN(amount) || amount <= 0 || !category) {
                 alert("Please ensure a valid Amount and Category are selected.");
                 return;
@@ -181,7 +254,7 @@
 
             // 2. Prepare values for table
             const formattedDate = formatDate(dateInput);
-            const newAmount = Math.round(amount); // Round to integer for display simplicity
+            const newAmount = Math.round(amount);
 
             // 3. Create the new table row element
             const newRow = document.createElement('tr');
@@ -191,7 +264,7 @@
                 <td>${formattedDate}</td>
                 <td>${category}</td>
                 <td>${paidBy}</td>
-                <td>${remarks}</td>
+                <td>${remarks} ${receiptDisplay !== 'None' ? '(' + receiptDisplay + ')' : ''}</td>
                 <td>${newAmount} rs</td>
                 <td class="status-draft">Draft</td>
             `;
@@ -200,20 +273,22 @@
             expensesTableBody.prepend(newRow);
             updateSummaryTotal(newAmount);
 
-            // Close the modal (requires Bootstrap JS to be loaded)
+            // Close the modal
             const modalElement = document.getElementById('newExpenseModal');
             const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
             modal.hide();
             
             // Reset the form for the next entry
             newExpenseForm.reset();
-            document.getElementById('expenseDate').value = today; // Reset date to today
+            document.getElementById('employeeName').value = "Current User"; 
+            document.getElementById('paidBy').value = "Current User";
+            document.getElementById('expenseDate').value = today;
         });
         // ------------------------------------------------------------------------
 
         // 5. "Upload" Button Click Handler (kept the previous upload simulation)
         uploadBtn.addEventListener('click', () => {
-            alert('Opening file upload dialog...');
+            alert('Opening a batch file upload interface...');
         });
     });
 </script>
