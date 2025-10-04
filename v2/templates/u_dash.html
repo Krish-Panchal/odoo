@@ -14,28 +14,26 @@
             border-radius: 10px;
             font-weight: bold;
         }
-        .status-draft { color: red; font-weight: bold; }
-        .status-submitted { color: green; font-weight: bold; }
+        .status-draft { color: #6c757d; font-weight: bold; }
+        .status-submitted { color: #0d6efd; font-weight: bold; }
+        .status-approved { color: #198754; font-weight: bold; }
+        .status-rejected { color: #dc3545; font-weight: bold; }
+        .status-pending { color: #ffc107; font-weight: bold; }
         .table th, .table td { vertical-align: middle; }
-        .receipt-link {
-            cursor: pointer;
-            color: blue;
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body class="bg-light">
 <div class="container mt-4">
-    <div class="mb-3 d-flex justify-content-end gap-2">
-        <button class="btn btn-outline-primary" id="uploadBtn">Upload</button>
-        <button class="btn btn-primary" id="newBtn" data-bs-toggle="modal" data-bs-target="#newExpenseModal">New</button>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Welcome, {{ user_name or 'Employee' }}!</h3>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" id="uploadBtn">Upload</button>
+            <button class="btn btn-primary" id="newBtn" data-bs-toggle="modal" data-bs-target="#newExpenseModal">New</button>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+        </div>
     </div>
 
-    <div class="summary-bar">
-        <div><span id="toSubmitAmount" data-amount="5467">5467</span> rs <br>To Submit</div>
-        <div>33674 rs <br>Waiting Approval</div>
-        <div>500 rs <br>Approved</div>
-    </div>
+    
 
     <div class="card p-3 shadow-sm">
         <table class="table table-bordered text-center">
@@ -52,31 +50,26 @@
                 </tr>
             </thead>
             <tbody id="expensesTableBody">
+                {% for expense in expenses %}
                 <tr>
-                    <td>Sarah</td>
-                    <td>Restaurant bill</td>
-                    <td>4th Oct, 2025</td>
-                    <td>Food</td>
-                    <td>Sarah</td>
-                    <td>None</td>
-                    <td>5000 rs</td>
-                    <td class="status-draft">Draft</td>
+                    <td>{{ user_name }}</td>
+                    <td>{{ expense.title }}</td>
+                    <td>{{ expense.date_incurred.strftime('%d %b, %Y') }}</td>
+                    <td>{{ expense.category }}</td>
+                    <td>{{ user_name }}</td>
+                    <td>{{ expense.description or 'None' }}</td>
+                    <td>{{ expense.original_amount|int }} rs</td>
+                    <td class="status-{{ expense.status|lower }}">{{ expense.status }}</td>
                 </tr>
+                {% else %}
                 <tr>
-                    <td>John</td>
-                    <td>Taxi fare</td>
-                    <td>4th Oct, 2025</td>
-                    <td>Transport</td>
-                    <td>John</td>
-                    <td>None</td>
-                    <td>1500 rs</td>
-                    <td class="status-submitted">Submitted</td>
+                    <td colspan="8" class="text-center text-muted">You have no expenses recorded. Click 'New' to add one!</td>
                 </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-
 <div class="modal fade" id="newExpenseModal" tabindex="-1" aria-labelledby="newExpenseModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -84,26 +77,21 @@
                 <h5 class="modal-title" id="newExpenseModalLabel">Enter New Expense Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="newExpenseForm">
+            <form id="newExpenseForm" action="{{ url_for('add_expense') }}" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="employeeName" class="form-label">Employee</label>
-                        <input type="text" class="form-control" id="employeeName" value="Current User" readonly>
-                    </div>
-
-                    <div class="mb-3">
                         <label for="expenseDescription" class="form-label">Description</label>
-                        <input type="text" class="form-control" id="expenseDescription" required>
+                        <input type="text" class="form-control" id="expenseDescription" name="expenseDescription" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="expenseDate" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="expenseDate" required>
+                        <input type="date" class="form-control" id="expenseDate" name="expenseDate" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="expenseCategory" class="form-label">Category</label>
-                        <select class="form-select" id="expenseCategory" required>
+                        <select class="form-select" id="expenseCategory" name="expenseCategory" required>
                             <option value="">Select Category</option>
                             <option value="Food">Food</option>
                             <option value="Transport">Transport</option>
@@ -112,28 +100,18 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
-
-                    <div class="mb-3">
-                        <label for="paidBy" class="form-label">Paid By</label>
-                        <input type="text" class="form-control" id="paidBy" value="Current User" required>
-                    </div>
-
+                    
                     <div class="mb-3">
                         <label for="expenseAmount" class="form-label">Amount (rs)</label>
-                        <input type="number" class="form-control" id="expenseAmount" min="0.01" step="0.01" required>
+                        <input type="number" class="form-control" id="expenseAmount" name="expenseAmount" min="0.01" step="0.01" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="expenseRemarks" class="form-label">Remarks</label>
-                        <textarea class="form-control" id="expenseRemarks" rows="2"></textarea>
+                         <textarea class="form-control" id="expenseRemarks" name="expenseRemarks" rows="2"></textarea>
                     </div>
-
-                    <div class="mb-3">
-                        <label for="receiptFile" class="form-label">Receipt (Photo/PDF)</label>
-                        <input type="file" class="form-control" id="receiptFile" accept="image/*,.pdf">
+                    
                     </div>
-
-                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-primary">Save as Draft</button>
@@ -143,153 +121,17 @@
     </div>
 </div>
 
-<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="imagePreviewModalLabel">Receipt Image Preview</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="receiptImage" src="" alt="Receipt Image" class="img-fluid" style="max-height: 80vh;">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
     document.addEventListener('DOMContentLoaded', (event) => {
-        const uploadBtn = document.getElementById('uploadBtn');
-        const expensesTableBody = document.getElementById('expensesTableBody');
-        const toSubmitAmountSpan = document.getElementById('toSubmitAmount');
-        const newExpenseForm = document.getElementById('newExpenseForm');
-        const receiptImageElement = document.getElementById('receiptImage');
-        const imagePreviewModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
-        
-        // A simple array to "store" file objects associated with table rows
-        // In a real app, this would be IDs referencing server-stored files
-        const attachedReceipts = []; 
-        let nextReceiptId = 0;
-
-        // Function to safely update the 'To Submit' summary total
-        function updateSummaryTotal(amountToAdd) {
-            let currentAmount = parseInt(toSubmitAmountSpan.dataset.amount || 0);
-            let newTotal = currentAmount + amountToAdd;
-            
-            toSubmitAmountSpan.textContent = newTotal;
-            toSubmitAmountSpan.dataset.amount = newTotal;
-        }
+        // --- IMPORTANT: The form submission handler that prevented default behavior has been removed ---
+        // Your other JavaScript for the image preview modal can remain.
 
         // Set today's date as default for the date input
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('expenseDate').value = today;
 
-        // Function to format the date for the table display
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
-        }
-
-        // --- Event Listener for Receipt Links in the Table ---
-        expensesTableBody.addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('receipt-link')) {
-                const receiptId = e.target.dataset.receiptId;
-                const file = attachedReceipts[receiptId];
-
-                if (file) {
-                    const fileURL = URL.createObjectURL(file);
-
-                    if (file.type.startsWith('image/')) {
-                        // Open image in modal
-                        receiptImageElement.src = fileURL;
-                        imagePreviewModal.show();
-                    } else {
-                        // For other file types (e.g., PDF), simulate download/open
-                        window.open(fileURL, '_blank');
-                        // Revoke the object URL when done to free up memory
-                        // (setTimeout is a simple way, but careful management needed in complex apps)
-                        setTimeout(() => URL.revokeObjectURL(fileURL), 5000); 
-                    }
-                } else {
-                    alert('Receipt not found.');
-                }
-            }
-        });
-
-        // --- Form Submission Handler ---
-        newExpenseForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // Stop the form from submitting normally
-            
-            // 1. Collect form data
-            const employee = document.getElementById('employeeName').value;
-            const description = document.getElementById('expenseDescription').value;
-            const dateInput = document.getElementById('expenseDate').value;
-            const category = document.getElementById('expenseCategory').value;
-            const paidBy = document.getElementById('paidBy').value;
-            const amount = parseFloat(document.getElementById('expenseAmount').value);
-            const remarks = document.getElementById('expenseRemarks').value || 'None';
-            
-            // Get file info
-            const receiptInput = document.getElementById('receiptFile');
-            const file = receiptInput.files.length > 0 ? receiptInput.files[0] : null;
-            let receiptDisplay = 'None';
-
-            if (file) {
-                // Store the file and create a unique ID
-                const currentReceiptId = nextReceiptId++;
-                attachedReceipts[currentReceiptId] = file;
-                receiptDisplay = `<span class="receipt-link" data-receipt-id="${currentReceiptId}">Attached (${file.name})</span>`;
-            }
-
-            // Basic validation
-            if (isNaN(amount) || amount <= 0 || !category) {
-                alert("Please ensure a valid Amount and Category are selected.");
-                return;
-            }
-
-            // 2. Prepare values for table
-            const formattedDate = formatDate(dateInput);
-            const newAmount = Math.round(amount);
-
-            // 3. Create the new table row element
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${employee}</td>
-                <td>${description}</td>
-                <td>${formattedDate}</td>
-                <td>${category}</td>
-                <td>${paidBy}</td>
-                <td>${remarks} ${receiptDisplay !== 'None' ? '(' + receiptDisplay + ')' : ''}</td>
-                <td>${newAmount} rs</td>
-                <td class="status-draft">Draft</td>
-            `;
-
-            // 4. Insert the new row, update the summary, and close modal
-            expensesTableBody.prepend(newRow);
-            updateSummaryTotal(newAmount);
-
-            // Close the modal
-            const modalElement = document.getElementById('newExpenseModal');
-            const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-            modal.hide();
-            
-            // Reset the form for the next entry
-            newExpenseForm.reset();
-            document.getElementById('employeeName').value = "Current User"; 
-            document.getElementById('paidBy').value = "Current User";
-            document.getElementById('expenseDate').value = today;
-        });
-        // ------------------------------------------------------------------------
-
-        // 5. "Upload" Button Click Handler (kept the previous upload simulation)
-        uploadBtn.addEventListener('click', () => {
-            alert('Opening a batch file upload interface...');
-        });
+        // ... (The rest of your JS for modals or other features can stay here)
     });
 </script>
 </body>

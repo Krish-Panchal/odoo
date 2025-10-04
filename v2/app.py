@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
 import mysql.connector
-import requests
+import requests, os
 
 app = Flask(__name__)
+
+app.secret_key = os.urandom(24) 
 
 DB_CONFIG = {
     'user': 'root',
@@ -11,6 +13,7 @@ DB_CONFIG = {
     'database': 'odoo'
 }
 
+#### Currency API
 def get_currency_from_country(country_name):
     """Fetches the currency code for a given country name."""
     try:
@@ -24,27 +27,18 @@ def get_currency_from_country(country_name):
         return "USD"  
 
 
+##DASHBOARD
 @app.route('/')
 def dashboard():
     """Renders the main dashboard/home page."""
     return render_template('dashboard.html')
 
+
+##SIGNUUP
 @app.route('/signup')
 def signup():
     """Renders the admin signup page."""
     return render_template('signup.html')
-
-@app.route('/admin_panel')
-def admin_panel():
-    return render_template('admin_dashboard.html')
-
-@app.route('/manager_dashboard')
-def manager_dashboard():
-    return "<h1>Welcome, Manager!</h1><p>This is your control panel.</p>"
-
-@app.route('/employee_dashboard')
-def employee_dashboard():
-    return "<h1>Welcome, Employee   !</h1><p>This is your control panel.</p>"
 
 
 @app.route('/signup/admin', methods=['POST'])
@@ -110,52 +104,12 @@ def admin_signup():
             cnx.close()
 
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """Handles both rendering the login page (GET) and processing the login form (POST)."""
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        if not email or not password:
-            return "Email and password are required", 400
-        
-        cnx = None
-        cursor = None
-        try:
-            cnx = mysql.connector.connect(**DB_CONFIG)
-            cursor = cnx.cursor(dictionary=True)
-
-            sql_select_user = "SELECT id, name, email, role, password FROM Users WHERE email = %s"
-            cursor.execute(sql_select_user, (email,))
-            user = cursor.fetchone()
-
-            if user and password == user['password']:
-                if user['role'] == 'Admin':
-                    return redirect(url_for('admin_panel'))
-                elif user['role'] == 'Manager':
-                    return redirect(url_for('manager_dashboard'))
-                elif user['role'] == 'Employee':
-                    return redirect(url_for('employee_dashboard'))
-                else:
-                    return "<h1>Login successful!</h1><p>Role not recognized.</p>"
-            else:
-                return "Invalid email or password", 401
-
-        except mysql.connector.Error as err:
-            print(f"Database error: {err}")
-            return "A database error occurred.", 500
-        finally:
-            if cursor:
-                cursor.close()
-            if cnx:
-                cnx.close()
-                
-    print("Serving the login.html page...")
-    return render_template('login.html')
+##ADMINPANEL
+@app.route('/admin_panel')
+def admin_panel():
+    return render_template('admin_dashboard.html')
 
 
-# === MODIFIED: Route to delete a user ===
 @app.route('/user/delete', methods=['POST'])
 def delete_user():
     """Deletes a user and flashes a confirmation message."""
@@ -174,10 +128,10 @@ def delete_user():
         cursor.execute(sql_delete_user, (username,))
         
         if cursor.rowcount == 0:
-            # Flash an error message if the user wasn't found
+            
             flash(f"Error: No user found with the name '{username}'.", 'danger')
         else:
-            # Flash a success message
+            
             flash(f"User '{username}' was successfully deleted.", 'success')
         
         cnx.commit()
@@ -192,9 +146,241 @@ def delete_user():
         if cnx:
             cnx.close()
 
-    # Always redirect back to the admin panel to show the message and updated list
+    
     return redirect(url_for('admin_panel'))
 
+
+
+##MANAGER DASHBOARD
+@app.route('/manager_dashboard')
+def manager_dashboard():
+    """Fetches and displays expenses awaiting approval for the manager's company."""
+    if 'user_id' not in session or session.get('user_role') != 'Manager':
+        return redirect(url_for('login'))
+
+    pending_expenses = []
+    cnx = None
+    cursor = None
+    try:
+        cnx = mysql.connector.connect(**DB_CONFIG)
+        cursor = cnx.cursor(dictionary=True)
+
+        company_id = session.get('company_id')
+
+        
+        query = """
+            SELECT 
+                e.expense_id,
+                e.title,
+                e.category,
+                e.original_amount,
+                e.original_currency,
+                e.submission_date,
+                u.name AS employee_name
+            FROM Expense_Slips e
+            JOIN Users u ON e.employee_id = u.id
+            WHERE e.company_id = %s AND e.status = 'Submitted'
+            ORDER BY e.submission_date ASC
+        """
+        cursor.execute(query, (company_id,))
+        pending_expenses = cursor.fetchall()
+
+    except mysql.connector.Error as err:
+        print(f"Database error fetching pending expenses: {err}")
+    finally:
+        if cursor: cursor.close()
+        if cnx: cnx.close()
+
+    return render_template('manager.html', 
+                           pending_expenses=pending_expenses, 
+                           user_name=session.get('user_name'))
+
+
+
+@app.route('/update_expense_status', methods=['POST'])
+def update_expense_status():
+    """Handles the approval or rejection of an expense."""
+    
+    if 'user_id' not in session or session.get('user_role') != 'Manager':
+        return redirect(url_for('login'))
+
+    expense_id = request.form.get('expense_id')
+    action = request.form.get('action') 
+
+    if not expense_id or not action:
+        
+        return "Error: Missing form data.", 400
+
+   
+    new_status = 'Approved' if action == 'approve' else 'Rejected'
+
+    cnx = None
+    cursor = None
+    try:
+        cnx = mysql.connector.connect(**DB_CONFIG)
+        cursor = cnx.cursor()
+        
+        
+        sql_update = "UPDATE Expense_Slips SET status = %s WHERE expense_id = %s"
+        cursor.execute(sql_update, (new_status, expense_id))
+        cnx.commit()
+
+    except mysql.connector.Error as err:
+        print(f"Database error updating expense status: {err}")
+        
+    finally:
+        if cursor: cursor.close()
+        if cnx: cnx.close()
+
+    return redirect(url_for('manager_dashboard'))
+
+
+
+##EMPLOYEEE DASHBOARD
+@app.route('/employee_dashboard')
+def employee_dashboard():
+    """Fetches and displays expenses for the logged-in employee."""
+    
+    if 'user_id' not in session or session.get('user_role') != 'Employee':
+        return redirect(url_for('login'))
+
+    expenses = []
+    db_connection = None
+    cursor = None
+    try:
+        db_connection = mysql.connector.connect(**DB_CONFIG)
+        cursor = db_connection.cursor(dictionary=True)
+        
+        employee_id = session.get('user_id')
+        
+        query = """
+            SELECT title, description, date_incurred, category, original_amount, status 
+            FROM Expense_Slips 
+            WHERE employee_id = %s 
+            ORDER BY date_incurred DESC
+        """
+        cursor.execute(query, (employee_id,))
+        expenses = cursor.fetchall()
+
+    except mysql.connector.Error as err:
+        print(f"Database error: {err}") 
+    finally:
+        if cursor:
+            cursor.close()
+        if db_connection:
+            db_connection.close()
             
+    return render_template('u_dash.html', expenses=expenses, user_name=session.get('user_name'))
+
+
+@app.route('/add_expense', methods=['POST'])
+def add_expense():
+    if 'user_id' not in session or session.get('user_role') != 'Employee':
+        return redirect(url_for('login'))
+
+    description = request.form.get('expenseDescription')
+    category = request.form.get('expenseCategory')
+    date_incurred = request.form.get('expenseDate')
+    amount = request.form.get('expenseAmount')
+
+
+    employee_id = session.get('user_id')
+    company_id = session.get('company_id')
+    currency = session.get('currency')
+
+    if not all([description, category, date_incurred, amount]):
+        return "Error: All fields are required.", 400
+
+    cnx = None
+    cursor = None
+    try:
+        cnx = mysql.connector.connect(**DB_CONFIG)
+        cursor = cnx.cursor()
+        
+        sql_insert_expense = """
+            INSERT INTO Expense_Slips 
+            (employee_id, company_id, title, category, date_incurred, original_amount, original_currency, status) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        expense_data = (employee_id, company_id, description, category, date_incurred, amount, currency, 'Draft')
+        
+        cursor.execute(sql_insert_expense, expense_data)
+        cnx.commit()
+
+    except mysql.connector.Error as err:
+        print(f"Database error on insert: {err}")
+        return "Failed to save expense due to a database error.", 500
+    finally:
+        if cursor: cursor.close()
+        if cnx: cnx.close()
+
+
+    return redirect(url_for('employee_dashboard'))
+
+
+
+##LOGIN
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        if not email or not password:
+            return "Email and password are required", 400
+        
+        cnx = None
+        cursor = None
+        try:
+            cnx = mysql.connector.connect(**DB_CONFIG)
+            cursor = cnx.cursor(dictionary=True)
+
+          
+            sql_select_user = """
+                SELECT u.id, u.name, u.email, u.role, u.password, u.company_id, c.default_currency 
+                FROM Users u 
+                JOIN Companies c ON u.company_id = c.id 
+                WHERE u.email = %s
+            """
+            cursor.execute(sql_select_user, (email,))
+            user = cursor.fetchone()
+
+            if user and password == user['password']:
+                
+                session['user_id'] = user['id']
+                session['user_name'] = user['name']
+                session['user_role'] = user['role']
+                session['company_id'] = user['company_id']       
+                session['currency'] = user['default_currency']  
+
+                if user['role'] == 'Employee':
+                    return redirect(url_for('employee_dashboard'))
+                elif user['role'] == 'Manager':
+                    return redirect(url_for('manager_dashboard'))
+                elif user['role'] == 'Admin':
+                    return redirect(url_for('admin_panel'))
+                else:
+                    return "<h1>Login successful!</h1><p>Role not recognized.</p>"
+            else:
+                return redirect(url_for('login'))
+
+        except mysql.connector.Error as err:
+            print(f"Database error: {err}")
+            return "A database error occurred.", 500
+        finally:
+            if cursor: cursor.close()
+            if cnx: cnx.close()
+                
+    return render_template('login.html')
+
+
+
+ 
+##LGOUT
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+          
 if __name__ == '__main__':
     app.run(debug=True)
