@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script>
+        // Function to set currency based on selected country
+        function updateCurrency() {
+            const country = document.getElementById("country").value;
+            const currencyInput = document.getElementById("currency");
+
+            const currencyMap = {
+                "India": "INR (₹)",
+                "United States": "USD ($)",
+                "United Kingdom": "GBP (£)",
+                "Canada": "CAD ($)",
+                "Australia": "AUD ($)",
+                "Japan": "JPY (¥)",
+                "Germany": "EUR (€)"
+            };
+
+            currencyInput.value = currencyMap[country] || "";
+        }
+
+        // Form validation
+        function validateForm(event) {
+            const form = document.getElementById("signupForm");
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            // Check password match
+            if (password !== confirmPassword) {
+                alert("Passwords do not match!");
+                event.preventDefault();
+                return false;
+            }
+
+            // HTML5 validation will handle required fields & email format
+            return true;
+        }
+    </script>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card p-4 shadow-lg">
+            <h3 class="text-center mb-4">Sign Up</h3>
+            <form id="signupForm" onsubmit="validateForm(event)" novalidate>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" placeholder="Enter your name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" placeholder="Enter your email" required>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" placeholder="Enter password" required minlength="6">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" placeholder="Re-enter password" required minlength="6">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Country</label>
+                        <select id="country" class="form-select" onchange="updateCurrency()" required>
+                            <option value="">Select your country</option>
+                            <option value="India">India</option>
+                            <option value="United States">United States</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                            <option value="Canada">Canada</option>
+                            <option value="Australia">Australia</option>
+                            <option value="Japan">Japan</option>
+                            <option value="Germany">Germany</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Currency</label>
+                        <input type="text" id="currency" class="form-control" placeholder="Auto filled based on country" readonly>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Company Name</label>
+                    <input type="text" class="form-control" placeholder="Enter company name" required>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary px-4">Submit</button>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary px-4 ms-2">Back</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

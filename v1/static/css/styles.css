@@ -1,0 +1,74 @@
+/* static/css/styles.css */
+
+/* Animated gradient background */
+body, html {
+  height: 100%;
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(-45deg, #1e1e2f, #12121e, #292947, #1e1e2f);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  color: #eee;
+}
+
+@keyframes gradientBG {
+  0% {background-position: 0% 50%;}
+  50% {background-position: 100% 50%;}
+  100% {background-position: 0% 50%;}
+}
+
+/* Dark form styles */
+.form-control, .form-select {
+  background-color: #2c2c3e;
+  border: 1px solid #444;
+  color: #eee;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #61dafb;
+  box-shadow: 0 0 8px #61dafb;
+  background-color: #3a3a51;
+  color: #fff;
+}
+
+.btn-primary {
+  background-color: #61dafb;
+  border-color: #61dafb;
+  transition: background-color 0.3s ease;
+  color: #12121e;
+}
+.btn-primary:hover {
+  background-color: #4bb8db;
+  border-color: #4bb8db;
+  color: #fff;
+}
+.btn-outline-secondary {
+  color: #61dafb;
+  border-color: #61dafb;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+.btn-outline-secondary:hover {
+  background-color: #61dafb;
+  color: #12121e;
+}
+
+/* Modal dark styles */
+.modal-content {
+  background-color: #2c2c3e;
+  color: #eee;
+  border: none;
+}
+.modal-header, .modal-footer {
+  border-color: #444;
+}
+.btn-close {
+  filter: invert(1);
+}
+
+/* Center container */
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

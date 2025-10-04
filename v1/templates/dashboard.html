@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Company Dashboard</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+<div class="container mt-5">
+  <h2>Welcome, {{ admin.name }} ({{ admin.role }})</h2>
+  <h4>Company: {{ company.name }}</h4>
+  <p>Country: {{ company.country }}</p>
+  <p>Currency: {{ company.currency }}</p>
+</div>
+
+</body>
+</html>
