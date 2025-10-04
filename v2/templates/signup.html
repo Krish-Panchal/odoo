@@ -1,76 +1,113 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-black">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Your JavaScript validation function
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mustard: '#FFDB58',
+          }
+        }
+      }
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased">
+    <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8 bg-black">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <h2 class="mt-10 text-center text-3xl font-bold leading-9 tracking-tight text-mustard">
+                Sign Up
+            </h2>
+             <p class="mt-2 text-center text-sm text-gray-400">
+                Enter your details to create your account.
+            </p>
+        </div>
+
+        <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
+             <div class="bg-gray-900/50 border border-gray-700 rounded-xl shadow-lg px-6 py-8 sm:px-10">
+                <form id="signupForm" action="{{ url_for('admin_signup') }}" method="POST" onsubmit="return validateForm(event)" class="space-y-6">
+                    <div>
+                        <label for="adminName" class="block text-sm font-medium leading-6 text-gray-300">Full Name</label>
+                        <div class="mt-2">
+                            <input id="adminName" name="adminName" type="text" required class="block w-full rounded-md border-0 py-2.5 px-3 bg-gray-800 text-white shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-mustard sm:text-sm sm:leading-6 transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium leading-6 text-gray-300">Email address</label>
+                        <div class="mt-2">
+                            <input id="email" name="email" type="email" autocomplete="email" required class="block w-full rounded-md border-0 py-2.5 px-3 bg-gray-800 text-white shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-mustard sm:text-sm sm:leading-6 transition">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="companyName" class="block text-sm font-medium leading-6 text-gray-300">Company Name</label>
+                        <div class="mt-2">
+                            <input id="companyName" name="companyName" type="text" required class="block w-full rounded-md border-0 py-2.5 px-3 bg-gray-800 text-white shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-mustard sm:text-sm sm:leading-6 transition">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="country" class="block text-sm font-medium leading-6 text-gray-300">Country</label>
+                        <div class="mt-2">
+                            <select id="country" name="country" required class="block w-full rounded-md border-0 py-2.5 px-3 bg-gray-800 text-white shadow-sm ring-1 ring-inset ring-gray-700 focus:ring-2 focus:ring-inset focus:ring-mustard sm:text-sm sm:leading-6 transition">
+                                <option value="">Select your country</option>
+                                <option value="India">India</option>
+                                <option value="United States">United States</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="Canada">Canada</option>
+                                <option value="Australia">Australia</option>
+                                <option value="Japan">Japan</option>
+                                <option value="Germany">Germany</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium leading-6 text-gray-300">Password</label>
+                        <div class="mt-2">
+                            <input id="password" name="password" type="password" required minlength="6" class="block w-full rounded-md border-0 py-2.5 px-3 bg-gray-800 text-white shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-mustard sm:text-sm sm:leading-6 transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="confirmPassword" class="block text-sm font-medium leading-6 text-gray-300">Confirm Password</label>
+                        <div class="mt-2">
+                            <input id="confirmPassword" name="confirmPassword" type="password" required minlength="6" class="block w-full rounded-md border-0 py-2.5 px-3 bg-gray-800 text-white shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-mustard sm:text-sm sm:leading-6 transition">
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="flex w-full justify-center rounded-md bg-mustard px-3 py-2.5 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-mustard/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mustard transition">Create Account</button>
+                    </div>
+                </form>
+            </div>
+            <p class="mt-10 text-center text-sm text-gray-500">
+                Already a member?
+                <a href="{{ url_for('login') }}" class="font-semibold leading-6 text-mustard hover:text-mustard/80 transition">Sign in</a>
+            </p>
+        </div>
+    </div>
+    <script>
         function validateForm(event) {
             const password = document.getElementById("password").value;
             const confirmPassword = document.getElementById("confirmPassword").value;
             if (password !== confirmPassword) {
                 alert("Passwords do not match!");
-                // Prevent the form from submitting
                 event.preventDefault(); 
                 return false;
             }
             return true;
         }
     </script>
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="card p-4 shadow-lg">
-            <h3 class="text-center mb-4">Sign Up</h3>
-            <!-- The form action correctly points to the admin_signup function -->
-            <form id="signupForm" action="{{ url_for('admin_signup') }}" method="POST" onsubmit="return validateForm(event)">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" class="form-control" name="adminName" placeholder="Enter your name" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" placeholder="Enter your email" required>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required minlength="6">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Re-enter password" required minlength="6">
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Country</label>
-                        <!-- THE FIX: The 'name' attribute is now "country" -->
-                        <select id="country" class="form-select" name="country" required>
-                            <option value="">Select your country</option>
-                            <option value="India">India</option>
-                            <option value="United States">United States</option>
-                            <option value="United Kingdom">United Kingdom</option>
-                            <option value="Canada">Canada</option>
-                            <option value="Australia">Australia</option>
-                            <option value="Japan">Japan</option>
-                            <option value="Germany">Germany</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Company Name</label>
-                    <input type="text" class="form-control" name="companyName" placeholder="Enter company name" required>
-                </div>
-                <div class="text-center">
-                    <button type="submit" class="btn btn-primary px-4">Submit</button>
-                    <a href="{{ url_for('login') }}" class="btn btn-secondary px-4 ms-2">Back to Login</a>
-                </div>
-            </form>
-        </div>
-    </div>
 </body>
 </html>
