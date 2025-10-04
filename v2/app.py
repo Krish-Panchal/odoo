@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 import mysql.connector
 import requests
 
@@ -36,7 +36,7 @@ def signup():
 
 @app.route('/admin_panel')
 def admin_panel():
-    return "<h1>Welcome, Admin!</h1><p>This is your control panel.</p>"
+    return render_template('admin_dashboard.html')
 
 @app.route('/manager_dashboard')
 def manager_dashboard():
@@ -155,6 +155,46 @@ def login():
     return render_template('login.html')
 
 
+# === MODIFIED: Route to delete a user ===
+@app.route('/user/delete', methods=['POST'])
+def delete_user():
+    """Deletes a user and flashes a confirmation message."""
+    username = request.form.get('username')
+    
+    if not username:
+        flash("Username is required to delete a user.", 'warning')
+        return redirect(url_for('admin_panel'))
+
+    cnx = None
+    cursor = None
+    try:
+        cnx = mysql.connector.connect(**DB_CONFIG)
+        cursor = cnx.cursor()
+        sql_delete_user = "DELETE FROM Users WHERE name = %s"
+        cursor.execute(sql_delete_user, (username,))
+        
+        if cursor.rowcount == 0:
+            # Flash an error message if the user wasn't found
+            flash(f"Error: No user found with the name '{username}'.", 'danger')
+        else:
+            # Flash a success message
+            flash(f"User '{username}' was successfully deleted.", 'success')
+        
+        cnx.commit()
+        
+    except mysql.connector.Error as err:
+        if cnx:
+            cnx.rollback()
+        flash(f"Database Error: {err.msg}", 'danger')
+    finally:
+        if cursor:
+            cursor.close()
+        if cnx:
+            cnx.close()
+
+    # Always redirect back to the admin panel to show the message and updated list
+    return redirect(url_for('admin_panel'))
+
+            
 if __name__ == '__main__':
     app.run(debug=True)
-
